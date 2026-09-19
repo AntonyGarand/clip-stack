@@ -2,9 +2,11 @@
 
 from pathlib import Path
 import argparse
+import base64
 import io
 import struct
 import zipfile
+import zlib
 
 from PIL import Image
 
@@ -37,6 +39,54 @@ def encode_i4(path, size):
     return header + palette + packed
 
 
+def pack_runs(data):
+    """Pack repeated bytes and literal blocks, each at most 128 bytes long."""
+    result = bytearray()
+    i = 0
+    while i < len(data):
+        run = 1
+        while i + run < len(data) and data[i + run] == data[i] and run < 128:
+            run += 1
+        if run >= 3:
+            result.extend((127 + run, data[i]))
+            i += run
+        else:
+            start = i
+            i += run
+            while i < len(data) and i - start < 128:
+                run = 1
+                while i + run < len(data) and data[i + run] == data[i] and run < 128:
+                    run += 1
+                if run >= 3:
+                    break
+                i += min(run, 128 - (i - start))
+            result.append(i - start - 1)
+            result.extend(data[start:i])
+    return bytes(result)
+
+
+def single_file(bundle):
+    loader = (ROOT / "scripts/native_artwork.lua").read_text()
+    for name in ("logo", "icon"):
+        data = bundle[name + ".bin"]
+        loader = loader.replace("@" + name.upper() + "_DATA@", base64.b64encode(pack_runs(data)).decode())
+        loader = loader.replace("@" + name.upper() + "_SIZE@", str(len(data)))
+        loader = loader.replace("@" + name.upper() + "_CHECKSUM@", str(zlib.adler32(data)))
+    revision = zlib.adler32(bundle["logo.bin"] + bundle["icon.bin"]) & 0x7fffffff
+    loader = loader.replace("@REVISION@", str(revision))
+    game = bundle["main.lua"].decode()
+    assert game.count("function on_enter(root)\n") == 1
+    game = game.replace("function on_enter(root)\n", "function on_enter(root)\n  if prepare_artwork then prepare_artwork(); prepare_artwork = nil end\n")
+    settings = {"version": "1.2.0", "heap_kb": "96"}
+    manifest = "\n".join(key + "=" + settings.get(key, value) for key, value in
+                         (line.split("=", 1) for line in bundle["manifest.cfg"].decode().splitlines())) + "\n"
+    main = loader + "\n" + game
+    assert len(main.encode()) <= 64 * 1024
+    installed = len(manifest.encode()) + len(main.encode()) + len(bundle["logo.bin"]) + len(bundle["icon.bin"])
+    assert installed < 24 * 1024, f"Single-file installation grew to {installed} bytes"
+    return f"--[==[badge-app\n{manifest}]==]\n\n{main}".encode(), installed
+
+
 def build(check=False):
     images = {
         "logo.bin": encode_i4(ROOT / "assets/wordmark.png", (200, 57)),
@@ -64,10 +114,17 @@ def build(check=False):
         assert path.read_bytes() == archive.getvalue(), f"Rebuild {path}"
     else:
         path.write_bytes(archive.getvalue())
+    source, installed = single_file(bundle)
+    path = ROOT / "assets/clip-stack.lua"
+    if check:
+        assert path.read_bytes() == source, f"Rebuild {path}"
+    else:
+        path.write_bytes(source)
     for name, data in bundle.items():
         print(f"{name}: {len(data):,} bytes")
     print(f"Share payload: {total:,} bytes ({100 * (1 - total / 47328):.1f}% smaller than 1.0)")
     print(f"ZIP download: {len(archive.getvalue()):,} bytes")
+    print(f"IDE import: {len(source):,} bytes; after creating images: {installed:,} bytes")
 
 
 if __name__ == "__main__":

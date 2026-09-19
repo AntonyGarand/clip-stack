@@ -37,15 +37,35 @@ command. Connection loss requires an explicit reconnect.
 
 ## Original badge firmware
 
-The original Lua app is in [`native/`](./native). Its full bundle is available
-as [a ZIP download](./assets/clip-stack-native.zip). It runs locally on the
-original Hack the North firmware and does not need Wi-Fi or this page.
+**For the Badge IDE, download [clip-stack.lua](./assets/clip-stack.lua).**
+This one-file edition includes the game, settings, and both logos. No separate
+image upload is needed.
+
+1. Save any current work in the [Badge IDE](https://badge.hackthenorth.com/ide/).
+2. Choose **Import app**, select `clip-stack.lua`, then **Replace editor files**.
+3. **Connect**, **Push**, then **Reboot**. The reboot applies this edition's
+   96 KiB Lua memory allowance for unpacking the artwork.
+4. Open **Clip Stack** on the badge. It creates and verifies both image files
+   on the first launch, then plays the same logo intro and game.
+
+The launcher can initially show `CB`; the generated C icon is available on
+the next launcher rescan/reboot after that first run. Later launches reuse
+the image files without rewriting them. The existing best score is preserved.
+An interrupted first launch retries the image setup when you reopen the app.
+
+The import file is 15,448 bytes. After its first launch, the app's files total
+22,160 bytes, still below Share's 48 KiB limit. This edition has been checked
+with the IDE's parser and a host Lua runtime; physical testing is pending.
+
+The smaller four-file version remains in [`native/`](./native) and as a
+[ZIP download](./assets/clip-stack-native.zip). Both editions run locally on
+the original Hack the North firmware and do not need Wi-Fi or this page.
 The Lua bundle cannot run under HTN OS. Flashing HTN OS replaces that firmware;
 the flasher's erase option removes existing data.
 
-The four files belong under `/littlefs/apps/clipboard_clip_stack/`.
-Both `.bin` images are necessary. The main file and manifest alone do not
-include the logo assets. The complete bundle is below Share's 48 KiB limit.
+For the ZIP edition, all four files belong under
+`/littlefs/apps/clipboard_clip_stack/`. Its separate main file and manifest
+need both `.bin` images alongside them.
 
 Version 1.1 reduces the installed files from **47,328 to 14,546 bytes (69% smaller)**.
 Share sends the installed files, so reducing the ZIP download alone would not
@@ -83,12 +103,20 @@ state, rate limiting, reply correlation, and rendering cancellation. Browser
 checks exercise the live UI and a simulated HTN OS socket. A physical HTN OS
 badge is needed to measure end-to-end network latency and display behavior.
 
-To rebuild the compact native images and ZIP from the original PNG artwork:
+To rebuild the compact images, ZIP, and one-file import from the PNG artwork:
 
 ```sh
 python3 -m pip install Pillow
 python3 scripts/build_native.py
 python3 scripts/build_native.py --check
+```
+
+To check first-launch image creation, cached launches, recovery from interrupted
+writes, and game startup in a host Lua runtime:
+
+```sh
+python3 -m pip install lupa
+python3 scripts/check_import.py
 ```
 
 Brand artwork: https://clipboard.health/og-card.png
