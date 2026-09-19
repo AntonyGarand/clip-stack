@@ -47,6 +47,27 @@ The four files belong under `/littlefs/apps/clipboard_clip_stack/`.
 Both `.bin` images are necessary. The main file and manifest alone do not
 include the logo assets. The complete bundle is below Share's 48 KiB limit.
 
+Version 1.1 reduces the installed files from **47,328 to 14,546 bytes (69% smaller)**.
+Share sends the installed files, so reducing the ZIP download alone would not
+speed up badge-to-badge transfers. The download ZIP is now 4,560 bytes.
+
+| File | Original | Compact |
+| --- | ---: | ---: |
+| Wordmark | 34,212 B | 5,776 B |
+| Launcher icon | 5,304 B | 958 B |
+| Game and manifest | 7,812 B | 7,812 B |
+
+The wordmark stays 200×57 and the launcher icon stays 42×42. Both use LVGL's
+16-color indexed format, including the two brand colors and intermediate
+shades for the edges. The Lua game code is unchanged. Connection setup and
+radio retries still affect total transfer time.
+
+Install all four files from the ZIP to replace the larger images. Keep the
+generated `.bin` files intact: the official IDE's icon preview only decodes
+RGB565A8, so it can label this valid indexed icon as corrupt. Choosing a new
+image in the IDE also regenerates the larger format. The compact images were
+uploaded, read back, and loaded on the original badge firmware.
+
 ## Development
 
 No build step or runtime dependencies:
@@ -61,6 +82,14 @@ The tests cover collisions, perfect streaks, retries, pause/resume, bounded
 state, rate limiting, reply correlation, and rendering cancellation. Browser
 checks exercise the live UI and a simulated HTN OS socket. A physical HTN OS
 badge is needed to measure end-to-end network latency and display behavior.
+
+To rebuild the compact native images and ZIP from the original PNG artwork:
+
+```sh
+python3 -m pip install Pillow
+python3 scripts/build_native.py
+python3 scripts/build_native.py --check
+```
 
 Brand artwork: https://clipboard.health/og-card.png
 Protocol: https://solana-htn.com/badge/docs
