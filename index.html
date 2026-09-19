@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#da2451">
+  <meta name="description" content="A one-button arcade game by Clipboard for Hack the North. Stack the cards, clip the overhang, and chase a perfect streak. Play here or on an HTN OS badge.">
+  <meta property="og:title" content="Clip Stack by Clipboard">
+  <meta property="og:description" content="Stack the cards. Clip the overhang. One more try.">
+  <meta property="og:image" content="https://antonygarand.github.io/clip-stack/assets/clipboard-og.png">
+  <title>Clip Stack — Clipboard</title>
+  <link rel="icon" href="./assets/icon.png" type="image/png">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="https://clipboard.health/" class="brand" aria-label="Clipboard home"><img src="./assets/wordmark-hd.png" width="200" height="57" alt="Clipboard"></a>
+    <span class="edition">HACK THE NORTH · 2026</span>
+    <a class="source-link" href="https://github.com/AntonyGarand/clip-stack" target="_blank" rel="noopener">Source ↗</a>
+  </header>
+
+  <main>
+    <section class="pitch" aria-labelledby="game-title">
+      <p class="eyebrow">THE CLIPBOARD ARCADE</p>
+      <h1 id="game-title">Clip <br>Stack<span>.</span></h1>
+      <p class="description">Stack the cards. Clip the overhang.<br>See how long you can keep it together.</p>
+      <div class="how-to">
+        <span class="key">A</span>
+        <p>One button. Time your drop.<br><span>Perfect stacks light up the badge.</span></p>
+      </div>
+      <a class="native-link" href="./assets/clip-stack-native.zip" download>Get the original USB badge game <span aria-hidden="true">↓</span></a>
+    </section>
+
+    <section class="play-area" aria-label="Play Clip Stack">
+      <div class="mode-switch" role="tablist" aria-label="Where to play">
+        <button id="browser-tab" role="tab" aria-selected="true" aria-controls="browser-panel" type="button">Play here</button>
+        <button id="badge-tab" role="tab" aria-selected="false" aria-controls="badge-panel" type="button">Use a badge</button>
+      </div>
+      <div id="browser-panel" role="tabpanel" aria-labelledby="browser-tab" class="mode-copy">Your best stays in this browser. A or Space to clip.</div>
+      <div id="badge-panel" role="tabpanel" aria-labelledby="badge-tab" hidden>
+        <form id="connect-form" class="connect-form">
+          <div class="fields">
+            <label>HTN-ID<input id="badge-id" name="badge-id" placeholder="5-character ID" maxlength="5" minlength="5" autocomplete="off" autocapitalize="none" spellcheck="false" required></label>
+            <label>App key<input id="badge-key" name="badge-key" type="password" placeholder="From badge settings" minlength="4" maxlength="32" autocomplete="off" required></label>
+          </div>
+          <button id="connect-button" class="connect-button" type="submit">Connect badge <span aria-hidden="true">↗</span></button>
+          <p class="connection-note">Needs <a href="https://solana-htn.com/badge/docs" target="_blank" rel="noopener">HTN OS</a> and Wi-Fi. Your app key stays in this tab.</p>
+        </form>
+        <div id="connected-controls" class="connected-controls" hidden><span id="connected-label"></span><button id="disconnect-button" type="button">Disconnect</button></div>
+        <p id="connection-status" role="status" aria-live="polite"></p>
+        <p id="connection-error" role="alert" hidden></p>
+      </div>
+
+      <div class="badge-shell" id="badge-shell">
+        <div class="lanyard" aria-hidden="true"></div>
+        <div class="bezel-label" aria-hidden="true"><span>CLIPBOARD</span><span>POCKET ARCADE / 01</span></div>
+        <span class="led led-0" aria-hidden="true"></span><span class="led led-1" aria-hidden="true"></span>
+        <span class="led led-2" aria-hidden="true"></span><span class="led led-3" aria-hidden="true"></span>
+        <span class="led led-4" aria-hidden="true"></span><span class="led led-5" aria-hidden="true"></span>
+        <div class="screen-wrap"><canvas id="screen" width="640" height="480" role="img" aria-label="Clip Stack game screen. Press A or Space to align the moving card with the card below."></canvas></div>
+        <div class="game-controls">
+          <button id="action-button" class="action-button" type="button"><span class="button-letter">A</span><span id="action-label">Play</span></button>
+          <button id="pause-button" class="pause-button" type="button" disabled><span class="button-letter">B</span><span id="pause-label">Pause</span></button>
+        </div>
+        <div class="bezel-footer"><span>↑ ↓ LED brightness</span><span>START / S restart</span></div>
+      </div>
+      <p id="game-status" class="game-status" aria-live="polite">Line it up. Make it count.</p>
+    </section>
+  </main>
+
+  <footer class="page-footer"><span>Made for Hack the North. Brought to you by Clipboard.</span><a href="https://solana-htn.com/badge" target="_blank" rel="noopener">Explore HTN OS ↗</a></footer>
+  <noscript><p class="noscript">Clip Stack needs JavaScript. You can still download the original badge game above.</p></noscript>
+</body>
+</html>
