@@ -204,7 +204,7 @@ function frame(now) {
   if (mode === 'browser') game.tick(now);
   else if (game.phase === 'intro') game.tick(now);
   else if (remoteActive && !remoteBusy && game.phase === 'play' && now >= nextRemoteFrame) {
-    game.tick(now, 125); void refreshRemote();
+    game.tick(now, 65); void refreshRemote();
   }
   draw(now); requestAnimationFrame(frame);
 }

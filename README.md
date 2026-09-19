@@ -27,7 +27,9 @@ in local storage. The input is cleared after connection. Each browser stores
 its own best scores, with separate records for browser and badge play.
 
 Every command is acknowledged and spaced at least 65 ms apart, below the
-20 commands/second service limit. Moving cards need two rectangle commands.
+20 commands/second service limit. Each moving row is sent as one 280×12 image
+containing both the card and background, so it never disappears between an
+erase command and a draw command. Each movement advances 65 ms of game time.
 Board changes pause movement until drawing finishes. Badge mode uses a slower
 speed and scores the last acknowledged position, rather than a predicted frame.
 Leaving the page pauses a running game; closing it sends a best-effort Home

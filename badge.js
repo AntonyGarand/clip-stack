@@ -97,8 +97,20 @@ const text = (content, x, y, size = 1, color = COLORS.yellow, background = COLOR
 const centered = (content, y, size = 1, background = COLORS.ink) => text(content, Math.round((320 - content.length * (size === 3 ? 12 : 6)) / 2), y, size, COLORS.yellow, background);
 
 export class BadgeRenderer {
-  constructor(connection) { this.connection = connection; this.previous = null; this.displayX = 8; this.cancelled = false; }
+  constructor(connection, { canvas = null } = {}) { this.connection = connection; this.canvas = canvas; this.previous = null; this.displayX = 8; this.cancelled = false; }
   cancel() { this.cancelled = true; }
+
+  rowImage(row, y) {
+    this.canvas ??= document.createElement('canvas');
+    this.canvas.width = 280; this.canvas.height = 12;
+    const ctx = this.canvas.getContext('2d');
+    ctx.fillStyle = COLORS.red; ctx.fillRect(0, 0, 280, 12);
+    if (row) { ctx.fillStyle = row.color; ctx.fillRect(row.x - 8, 0, row.w, 12); }
+    // The badge draws commands immediately. Send background and brick together
+    // so a network round trip never leaves the whole moving row blank.
+    return { cmd: 'image', image: this.canvas.toDataURL('image/png').split(',')[1], x: 20, y, fit: 'none' };
+  }
+
   async commands(list) {
     for (const command of list) {
       if (this.cancelled) throw new Error('Badge rendering stopped.');
@@ -135,8 +147,8 @@ export class BadgeRenderer {
       for (let i = 0; i < Math.max(rows.length, previousRows.length); i++) {
         const next = rows[i], before = previousRows[i], y = 194 - i * 14;
         if (!force && JSON.stringify(next) === JSON.stringify(before)) continue;
-        if (!force) commands.push(rect(20, y, 280, 12, COLORS.red));
-        if (next) commands.push(rect(12 + next.x, y, next.w, 12, next.color));
+        if (!force) commands.push(this.rowImage(next, y));
+        else if (next) commands.push(rect(12 + next.x, y, next.w, 12, next.color));
       }
       if (force) commands.push(rect(56, 209, 208, 4, COLORS.ink));
     } else if (force) {

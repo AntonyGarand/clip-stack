@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BadgeConnection, BadgeRenderer, connectionURL } from '../badge.js';
-import { ClipStack } from '../game.js';
+import { ClipStack, COLORS } from '../game.js';
 
 class FakeSocket {
   static last;
@@ -46,15 +46,46 @@ test('a device error rejects a command with a useful message', async () => {
   connection.close();
 });
 
-test('rendering one movement only erases and draws its row', async () => {
-  const commands=[];
-  const renderer=new BadgeRenderer({command:async cmd=>commands.push(cmd)});
+// A canvas boundary double preserves pixels for the simulated display. The
+// browser check also decodes the actual PNGs produced by a real canvas.
+class PixelCanvas {
+  constructor() {
+    this.context = {
+      fillStyle: '',
+      fillRect: (x, y, w, h) => {
+        this.pixels ??= Array(this.width * this.height).fill(COLORS.red);
+        for (let row=y;row<y+h;row++) for (let col=x;col<x+w;col++) this.pixels[row*this.width+col]=this.context.fillStyle;
+      },
+    };
+  }
+  getContext() { return this.context; }
+  toDataURL() { return `data:image/png;base64,${Buffer.from(JSON.stringify({width:this.width,height:this.height,pixels:this.pixels})).toString('base64')}`; }
+}
+
+test('moving bricks stay visible between acknowledged display commands in both directions', async () => {
+  const commands=[], screen=Array(320*240).fill(COLORS.red);
+  let moving=false;
+  const renderer=new BadgeRenderer({command:async cmd=>{
+    commands.push(cmd);
+    if (cmd.cmd==='rect') {
+      for (let y=cmd.y;y<cmd.y+cmd.h;y++) for (let x=cmd.x;x<cmd.x+cmd.w;x++) screen[y*320+x]=cmd.color;
+    } else if (cmd.cmd==='image') {
+      const image=JSON.parse(Buffer.from(cmd.image,'base64'));
+      for (let y=0;y<image.height;y++) for (let x=0;x<image.width;x++) screen[(cmd.y+y)*320+cmd.x+x]=image.pixels[y*image.width+x];
+    }
+    if (moving) assert.equal(screen.filter(c=>c===COLORS.white).length,152*12,'the brick must remain visible while waiting for the next command');
+  }}, {canvas:new PixelCanvas()});
   const game=new ClipStack({badge:true}); game.start(0);
-  await renderer.sync(game.snapshot()); commands.length=0;
-  game.x=20; await renderer.sync(game.snapshot());
-  assert.equal(commands.length,2); assert.ok(commands.every(c=>c.cmd==='rect'));
-  assert.equal(renderer.displayX,20);
-  assert.equal(commands.at(-1).x,32);
+  await renderer.sync(game.snapshot()); moving=true;
+  for (const position of [20,136,120,8]) {
+    commands.length=0; game.x=position; await renderer.sync(game.snapshot());
+    assert.equal(commands.length,1);
+    assert.equal(commands[0].cmd,'image');
+    assert.equal(commands[0].fit,'none');
+    assert.equal(renderer.displayX,position);
+    for (let x=20;x<300;x++) assert.equal(screen[180*320+x],x>=12+position && x<12+position+152 ? COLORS.white : COLORS.red);
+    assert.equal(screen[194*320+84],COLORS.yellow,'the stack below must be untouched');
+  }
 });
 
 test('disconnect cancels a redraw before later commands can retake the screen', async () => {
