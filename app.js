@@ -162,7 +162,7 @@ $('connect-form').addEventListener('submit', async event => {
     remote = new BadgeRenderer(connection); remoteBusy = true;
     await logo.decode();
     const imageCanvas = document.createElement('canvas'); imageCanvas.width = 200; imageCanvas.height = 57;
-    imageCanvas.getContext('2d').drawImage(logo, 0, 0);
+    imageCanvas.getContext('2d').drawImage(logo, 0, 0, 200, 57);
     game = new ClipStack({ best: loadBest(), badge: true }); game.introAt = performance.now();
     await remote.intro(imageCanvas.toDataURL('image/png').split(',')[1]);
     if (epoch !== connectionEpoch) return;
